@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JOINCOM · 内部导航台 Beta</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+:root {
+  --bg: #f5f3ef; --bg2: #eae7e1; --bg3: #dedad3;
+  --card: #ffffff; --card-hover: #fdfcfa;
+  --header: #2c2825; --header2: #3d3833;
+  --fg: #2c2825; --fg2: #6b6560; --fg3: #9e9890; --fg4: #c5c0b8;
+  --accent: #c0542e; --accent-bg: #fdf0eb; --accent-light: #e8c4b4;
+  --blue: #2d6ca5; --blue-bg: #eaf1f8;
+  --green: #3a7d50; --green-bg: #eaf5ee;
+  --amber: #a87b20; --amber-bg: #fdf5e3;
+  --purple: #7c5caa; --purple-bg: #f3eefa;
+  --teal: #2a7d7d; --teal-bg: #e6f5f5;
+  --border: #e8e4de; --border2: #d5d0c8;
+  --shadow: 0 1px 3px rgba(44,40,37,0.06), 0 1px 2px rgba(44,40,37,0.04);
+  --shadow-md: 0 4px 12px rgba(44,40,37,0.08), 0 2px 4px rgba(44,40,37,0.04);
+  --radius: 12px; --radius-sm: 8px;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Noto Sans SC', -apple-system, sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); line-height: 1.6; }
+
+/* ===== 密码锁屏 ===== */
+#lock-screen {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--header);
+  display: flex; align-items: center; justify-content: center; flex-direction: column;
+}
+#lock-screen.hidden { display: none; }
+.lock-logo { width: 64px; height: 64px; background: var(--accent); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-weight: 700; font-size: 24px; color: #fff; margin-bottom: 24px; }
+.lock-title { color: #fff; font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.lock-sub { color: var(--fg3); font-size: 13px; margin-bottom: 28px; }
+.lock-input-wrap { display: flex; gap: 8px; }
+.lock-input { width: 240px; padding: 10px 16px; border: 1.5px solid rgba(255,255,255,0.15); border-radius: var(--radius-sm); background: rgba(255,255,255,0.08); color: #fff; font-size: 14px; font-family: var(--mono); outline: none; transition: border-color 0.2s; }
+.lock-input:focus { border-color: var(--accent); }
+.lock-input::placeholder { color: rgba(255,255,255,0.3); }
+.lock-btn { padding: 10px 20px; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+.lock-btn:hover { background: #d4613a; }
+.lock-error { color: #e85d5d; font-size: 12px; margin-top: 12px; min-height: 16px; }
+
+/* ===== 主内容 ===== */
+#app { display: none; }
+#app.visible { display: block; }
+
+/* Header */
+.header { background: var(--header); padding: 16px 0; position: sticky; top: 0; z-index: 100; }
+.header-inner { max-width: 1100px; margin: 0 auto; padding: 0 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.logo-mark { width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-weight: 700; font-size: 14px; color: #fff; }
+.logo-text { color: #fff; font-size: 16px; font-weight: 700; letter-spacing: 0.5px; }
+.header-search { flex: 1; max-width: 360px; position: relative; }
+.header-search input { width: 100%; padding: 8px 12px 8px 36px; border: 1px solid rgba(255,255,255,0.12); border-radius: var(--radius-sm); background: rgba(255,255,255,0.06); color: #fff; font-size: 13px; outline: none; transition: all 0.2s; }
+.header-search input:focus { border-color: var(--accent); background: rgba(255,255,255,0.1); }
+.header-search input::placeholder { color: rgba(255,255,255,0.35); }
+.header-search svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: rgba(255,255,255,0.35); }
+.header-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.header-date { color: var(--fg3); font-size: 12px; font-family: var(--mono); }
+.logout-btn { padding: 4px 12px; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; background: none; color: var(--fg3); font-size: 11px; cursor: pointer; transition: all 0.2s; }
+.logout-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+/* Stats */
+.stats-bar { max-width: 1100px; margin: 0 auto; padding: 16px 24px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.stat-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; text-align: center; }
+.stat-num { font-size: 24px; font-weight: 700; font-family: var(--mono); color: var(--accent); }
+.stat-label { font-size: 11px; color: var(--fg3); margin-top: 2px; }
+
+/* Filter */
+.filter-bar { max-width: 1100px; margin: 0 auto; padding: 4px 24px 8px; }
+.filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 500; border: 1.5px solid var(--border); background: var(--card); color: var(--fg2); cursor: pointer; transition: all 0.2s; }
+.chip:hover { border-color: var(--accent-light); color: var(--accent); }
+.chip.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* Main */
+.main { max-width: 1100px; margin: 0 auto; padding: 16px 24px 24px; }
+
+/* Section */
+.section { margin-bottom: 28px; }
+.section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1.5px solid var(--border); }
+.section-icon { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; font-family: var(--mono); }
+.section-title { font-size: 15px; font-weight: 700; }
+.section-count { font-size: 11px; color: var(--fg3); font-family: var(--mono); margin-left: auto; }
+
+/* Cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 10px; }
+
+.tool-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; cursor: default; transition: all 0.2s; position: relative; overflow: hidden; }
+.tool-card:hover { border-color: var(--border2); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.tool-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3.5px; }
+.tool-card[data-color="accent"]::before { background: var(--accent); }
+.tool-card[data-color="blue"]::before { background: var(--blue); }
+.tool-card[data-color="green"]::before { background: var(--green); }
+.tool-card[data-color="amber"]::before { background: var(--amber); }
+.tool-card[data-color="purple"]::before { background: var(--purple); }
+.tool-card[data-color="teal"]::before { background: var(--teal); }
+
+.card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 6px; }
+.card-name { font-size: 14px; font-weight: 700; line-height: 1.3; }
+.card-version { font-size: 10px; font-family: var(--mono); color: var(--fg3); background: var(--bg2); padding: 2px 7px; border-radius: 10px; white-space: nowrap; margin-left: 8px; flex-shrink: 0; }
+.card-desc { font-size: 12px; color: var(--fg2); line-height: 1.5; margin-bottom: 10px; }
+.card-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.meta-tag { font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 500; }
+.tag-deployed { background: var(--green-bg); color: var(--green); }
+.tag-pending { background: var(--blue-bg); color: var(--blue); }
+.tag-need-link { background: var(--amber-bg); color: var(--amber); }
+.tag-hold { background: var(--bg2); color: var(--fg3); }
+.tag-sensitive { background: #fde8e8; color: #b91c1c; }
+.tag-local { background: var(--bg2); color: var(--fg3); }
+.tag-missing { background: var(--amber-bg); color: var(--amber); }
+.tag-role { background: var(--bg2); color: var(--fg3); }
+.card-link { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--accent); text-decoration: none; font-weight: 500; margin-top: 8px; transition: color 0.2s; }
+.card-link:hover { color: var(--fg); }
+
+/* No results */
+.no-results { text-align: center; padding: 48px 24px; color: var(--fg3); font-size: 14px; display: none; }
+
+/* Footer */
+.footer { text-align: center; padding: 20px; color: var(--fg4); font-size: 11px; border-top: 1px solid var(--border); margin-top: 12px; }
+
+/* Sprint banner */
+.sprint-banner { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+.sprint-inner { background: linear-gradient(135deg, var(--header) 0%, var(--header2) 100%); border-radius: var(--radius); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.sprint-left { display: flex; align-items: center; gap: 12px; }
+.sprint-badge { background: var(--accent); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 10px; font-family: var(--mono); }
+.sprint-text { color: #fff; font-size: 13px; font-weight: 500; }
+.sprint-text span { color: var(--fg3); font-size: 12px; margin-left: 8px; }
+.sprint-right { color: var(--accent-light); font-size: 12px; font-family: var(--mono); }
+
+@media (max-width: 768px) {
+  .stats-bar { grid-template-columns: repeat(3, 1fr); }
+  .cards { grid-template-columns: 1fr; }
+  .header-search { display: none; }
+  .sprint-inner { flex-direction: column; gap: 8px; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- 密码锁屏 -->
+<div id="lock-screen">
+  <div class="lock-logo">JK</div>
+  <div class="lock-title">内部导航台</div>
+  <div class="lock-sub">JOINCOM INTERNAL · Beta</div>
+  <div class="lock-input-wrap">
+    <input class="lock-input" type="password" id="pwd-input" placeholder="输入访问密码" autocomplete="off">
+    <button class="lock-btn" id="pwd-btn">进入</button>
+  </div>
+  <div class="lock-error" id="pwd-error"></div>
+</div>
+
+<!-- 主内容 -->
+<div id="app">
+
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-mark">JK</div>
+      <span class="logo-text">内部导航台</span>
+    </div>
+    <div class="header-search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="search-input" placeholder="搜索工具名称...">
+    </div>
+    <div class="header-right">
+      <div class="header-date" id="date"></div>
+      <button class="logout-btn" id="logout-btn">锁定</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sprint banner -->
+<div class="sprint-banner">
+  <div class="sprint-inner">
+    <div class="sprint-left">
+      <span class="sprint-badge">10天冲刺</span>
+      <span class="sprint-text">Day 1 · 补齐 + 部署上线 <span>5月6日 – 5月15日</span></span>
+    </div>
+    <div class="sprint-right">内部工具整合 · Preview</div>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-card"><div class="stat-num">25</div><div class="stat-label">工具总数</div></div>
+  <div class="stat-card"><div class="stat-num">8</div><div class="stat-label">核心系统</div></div>
+  <div class="stat-card"><div class="stat-num">5</div><div class="stat-label">AI 员工</div></div>
+  <div class="stat-card"><div class="stat-num">10</div><div class="stat-label">已部署</div></div>
+  <div class="stat-card"><div class="stat-num">0</div><div class="stat-label">待部署</div></div>
+</div>
+
+<div class="filter-bar">
+  <div class="filter-chips">
+    <div class="chip active" data-role="all">全部</div>
+    <div class="chip" data-role="alice">Alice</div>
+    <div class="chip" data-role="xiaojun">晓筠</div>
+    <div class="chip" data-role="liang">梁咏臻</div>
+    <div class="chip" data-role="qiqi">琪琪</div>
+    <div class="chip" data-role="martin">Martin</div>
+    <div class="chip" data-role="mia">MIA</div>
+  </div>
+</div>
+
+<div class="main" id="main">
+
+  <!-- 一、业务运营 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:var(--accent-bg);color:var(--accent);">1</div>
+      <div class="section-title">业务运营</div>
+      <div class="section-count">8 tools</div>
+    </div>
+    <div class="cards">
+      <div class="tool-card" data-color="accent" data-roles="alice,liang,qiqi" data-name="聚客工单系统">
+        <div class="card-top"><span class="card-name">聚客工单系统</span><span class="card-version">v2 · 60KB</span></div>
+        <div class="card-desc">三类工单（A结算提报 / B客户投诉 / C提现失败）· 看板 · 审批中心 · 周报分析</div>
+        <div class="card-meta"><span class="meta-tag tag-deployed">✓ 已部署</span><span class="meta-tag tag-role">梁咏臻</span><span class="meta-tag tag-role">Alice</span></div>
+        <a class="card-link" href="https://incandescent-muffin-f1bbb0.netlify.app" target="_blank">打开系统 ↗</a>
+      </div>
+      <div class="tool-card" data-color="accent" data-roles="alice,liang" data-name="聚客结算中台">
+        <div class="card-top"><span class="card-name">聚客结算中台</span><span class="card-version">Caliber B · 325KB</span></div>
+        <div class="card-desc">佣金结算引擎 · Format A（灵兔小规模）/ Format B（一般纳税人）· 渠道佣金 + 聚客利润自动拆分</div>
+        <div class="card-meta"><span class="meta-tag tag-deployed">✓ 已部署</span><span class="meta-tag tag-sensitive">敏感权限</span><span class="meta-tag tag-role">梁咏臻</span></div>
+        <a class="card-link" href="https://cheerful-genie-76e59b.netlify.app/" target="_blank">打开系统 ↗</a>
+      </div>
+      <div class="tool-card" data-color="accent" data-roles="alice,liang" data-name="领功中台">
+        <div class="card-top"><span class="card-name">领功中台</span><span class="card-version">AGENT · 306KB</span></div>
+        <div class="card-desc">12页面5大分组 · 经营驾驶舱 / 流水中台 / 结算经营 / 规则与对账 / 渠道管理</div>
+        <div class="card-meta"><span class="meta-tag tag-deployed">✓ 已部署</span><span class="meta-tag tag-sensitive">敏感权限</span><span class="meta-tag tag-role">梁咏臻</span></div>
+        <a class="card-link" href="https://dulcet-sfogliatella-b65ca3.netlify.app/" target="_blank">打开系统 ↗</a>
+      </div>
+      <div class="tool-card" data-color="blue" data-roles="alice,martin" data-name="聚客分销系统演示版">
+        <div class="card-top"><span class="card-name">聚客分销系统（演示版）</span><span class="card-version">v4 · 0324</span></div>
+        <div class="card-desc">CMHK 展示用 · 八大模块全流程可交互原型 · 准入→资质→入网→渠道→运营→佣金→退出</div>
+        <div class="card-meta"><span class="meta-tag tag-deployed">✓ 已部署</span><span class="meta-tag tag-role">Alice</span><span class="meta-tag tag-role">Manson</span></div>
+        <a class="card-link" href="https://incandescent-empanada-42bc0f.netlify.app/" target="_blank">打开系统 ↗</a>
+      </div>
+      <div class="tool-card" data-color="blue" data-roles="alice" data-name="分销系统NSRG适配版">
+        <div class="card-top"><span class="card-name">分销系统 NSRG 适配版</span><span class="card-version">0402</span></div>
+        <div class="card-desc">适配 CMHK 甲方 NSRG 报表格式 · 三期佣金（T+1/T+3/T+7）自动拆分</div>
+        <div class="card-meta"><span class="meta-tag tag-deployed">✓ 已部署</span></div>
+        <a class="card-link" href="https://resplendent-valkyrie-acb0c4.netlify.app/" target="_blank">打开系统 ↗</a>
+      </div>
+      <div class="tool-card" data-color="accent" data-roles="alice,liang,qiqi" data-name="游戏规则文档">
+        <div class="card-top"><span class="card-name">游戏规则文档</span><span class="card-version">v2 · DOCX</span></div>
+        <div class="card-desc">工单系统配套制度文件 · 三类工单定义 · 审批链 · 时效与硬规则</div>
+        <div class="card-meta"><span class="meta-tag tag-need-link">待补链接</span><span class="meta-tag tag-role">全员</span></div>
+        <span class="card-link">📂 joincom-rules-v2.docx</span>
+      </div>
+      <div class="tool-card" data-color="blue" data-roles="alice" data-name="业务流转全景图">
+        <div class="card-top"><span class="card-name">业务流转全景图</span><span class="card-version">v3 · SVG</span></div>
+        <div class="card-desc">八大模块矢量流程图 · 四色角色标识 · 可在 Figma/Illustrator 编辑</div>
+        <div class="card-meta"><span class="meta-tag tag-need-link">待补链接</span></div>
+        <span class="card-link">📂 聚客分销系统_业务流转全景图_v3.svg</span>
+      </div>
+      <div class="tool-card" data-color="blue" data-roles="alice" data-name="领功对接架构图">
+        <div class="card-top"><span class="card-name">领功对接架构图</span><span class="card-version">v2 · SVG</span></div>
+        <div class="card-desc">聚客分销系统↔领功 四个活接口 + 一个预留接口的技术架构图</div>
+        <div class="card-meta"><span class="meta-tag tag-need-link">待补链接</span></div>
+        <span class="card-link">📂 聚客分销系统_领功对接架构图_v2.svg</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 二、人事行政 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:var(--green-bg);color:var(--green);">2</div>
+      <div class="section-title">人事行政</div>
+      <div class="section-count">6 tools</div>
+    </div>
+    <div class="cards">
+      <div class="tool-card" data-color="green" data-roles="xiaojun" data-name="聚客薪资系统">
+        <div class="card-top"><span class="card-name">聚客薪资系统</span><span class="card-version">v2 · HTML</span></div>
+        <div class="card-desc">四步流程：员工底表 → 考勤CSV导入 → 考勤审核 → 工资表 + Excel导出</div>
+        <div class="card-meta"><span class="meta-tag tag-deployed">✓ 已部署</span><span class="meta-tag tag-sensitive">敏感权限</span><span class="meta-tag tag-role">晓筠</span></div>
+        <a class="card-link" href="https://magical-panda-2b6cc2.netlify.app/" target="_blank">打开系统 ↗</a>
+      </div>
+      <div class="tool-card" data-color="green" data-roles="xiaojun" data-name="考勤数据处理器">
+        <div class="card-top"><span class="card-name">考勤数据处理器</span><span class="card-version">JSX + PY</span></div>
+        <div class="card-desc">自动编码识别（GBK/UTF-8）· 打卡匹配（最早=上班/最晚=下班）· 弹性制判定 · 含 Python 导入脚本</div>
+        <div class="card-meta"><span class="meta-tag tag-pending">待部署</span><span class="meta-tag tag-role">晓筠</span></div>
+        <span class="card-link">📂 考勤数据处理器.jsx + 导入考勤.py</span>
+      </div>
+      <div class="tool-card" data-color="green" data-roles="alice,qiqi,xiaojun" data-name="人事行政SOP手册">
+        <div class="card-top"><span class="card-name">人事行政 SOP 手册</span><span class="card-version">V4.0</span></div>
+        <div class="card-desc">覆盖九个关联主体 · 入职/离职/合同/薪酬社保/公章证照 · 22项合规风险登记表 · 4套模板</div>
+        <div class="card-meta"><span class="meta-tag tag-need-link">待补链接</span><span class="meta-tag tag-role">琪琪</span><span class="meta-tag tag-role">晓筠</span></div>
+        <span class="card-link">📂 人事行政管理SOP手册_V4.0正式版.docx</span>
+      </div>
+      <div class="tool-card" data-color="green" data-roles="alice,qiqi,xiaojun" data-name="核心流程泳道图">
+        <div class="card-top"><span class="card-name">核心流程泳道图</span><span class="card-version">V3 · HTML</span></div>
+        <div class="card-desc">五套交互式泳道图（入职/离职/公章/薪酬社保/工资发放）· Tab切换 · 红色合规检查点</div>
+        <div class="card-meta"><span class="meta-tag tag-deployed">✓ 已部署</span><span class="meta-tag tag-role">琪琪</span><span class="meta-tag tag-role">晓筠</span></div>
+        <a class="card-link" href="https://shiny-custard-261e0b.netlify.app/" target="_blank">打开系统 ↗</a>
+      </div>
+      <div class="tool-card" data-color="green" data-roles="alice,qiqi,xiaojun" data-name="考勤管理通知">
+        <div class="card-top"><span class="card-name">考勤管理通知</span><span class="card-version">修订版</span></div>
+        <div class="card-desc">广州办公室办公及考勤管理正式通知文件</div>
+        <div class="card-meta"><span class="meta-tag tag-need-link">待补链接</span></div>
+        <span class="card-link">📂 关于广州办公室办公及考勤管理的通知_修订版.docx</span>
+      </div>
+      <div class="tool-card" data-color="green" data-roles="alice" data-name="薪资系统配套数据">
+        <div class="card-top"><span class="card-name">薪资系统配套数据</span><span class="card-version">Excel + CSV</span></div>
+        <div class="card-desc">聚客自动化薪资系统_已导入考勤.xlsx · 模拟考勤_202604.csv · dashboard.js</div>
+        <div class="card-meta"><span class="meta-tag tag-sensitive">敏感权限</span></div>
+        <span class="card-link">📂 3个配套文件</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 三、财务审计 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:var(--amber-bg);color:var(--amber);">3</div>
+      <div class="section-title">财务审计</div>
+      <div class="section-count">2 tools</div>
+    </div>
+    <div class="cards">
+      <div class="tool-card" data-color="amber" data-roles="alice,liang" data-name="审计文件导航系统">
+        <div class="card-top"><span class="card-name">审计文件导航系统</span><span class="card-version">365条记录</span></div>
+        <div class="card-desc">香港公司审计全部交易文件 · 按 deliver/payment/purchase/receipt 四类分组 · 搜索筛选 · 缺失标记</div>
+        <div class="card-meta"><span class="meta-tag tag-deployed">✓ 已部署</span><span class="meta-tag tag-sensitive">敏感权限</span><span class="meta-tag tag-role">Alice</span></div>
+        <a class="card-link" href="https://deluxe-zuccutto-fd3b89.netlify.app/" target="_blank">打开系统 ↗</a>
+      </div>
+      <div class="tool-card" data-color="amber" data-roles="alice,liang" data-name="发票账单模板">
+        <div class="card-top"><span class="card-name">发票 / 账单模板</span><span class="card-version">含 Logo</span></div>
+        <div class="card-desc">聚客标准发票通知 + 付款通知模板</div>
+        <div class="card-meta"><span class="meta-tag tag-need-link">待补链接</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 四、获客与内容 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:var(--purple-bg);color:var(--purple);">4</div>
+      <div class="section-title">获客与内容</div>
+      <div class="section-count">5 tools</div>
+    </div>
+    <div class="cards">
+      <div class="tool-card" data-color="purple" data-roles="alice,mia" data-name="席卷计划AI员工体系">
+        <div class="card-top"><span class="card-name">席卷计划 · AI 员工体系</span><span class="card-version">5 AI + 总调度</span></div>
+        <div class="card-desc">线索猎人→内容工厂→对话员→运营官→裂变员 · 含SOP×5 + 启动指令×2 + global-state + leads-master</div>
+        <div class="card-meta"><span class="meta-tag tag-local">10个文件</span><span class="meta-tag tag-role">Alice</span><span class="meta-tag tag-role">MIA</span></div>
+        <span class="card-link">📂 本地房地产文件夹/shared/</span>
+      </div>
+      <div class="tool-card" data-color="purple" data-roles="alice" data-name="JOINCOM香港官网">
+        <div class="card-top"><span class="card-name">JOINCOM 香港官网</span><span class="card-version">静态站 · 13页</span></div>
+        <div class="card-desc">首页 · 解决方案 · 房地产落地页 · 渠道入驻 · 隐私政策 · 条款</div>
+        <div class="card-meta"><span class="meta-tag tag-deployed">✓ 已部署</span></div>
+        <a class="card-link" href="https://beamish-sherbet-c2acaa.netlify.app/" target="_blank">打开官网 ↗</a>
+      </div>
+      <div class="tool-card" data-color="purple" data-roles="alice,mia" data-name="CMHK渠道落地页">
+        <div class="card-top"><span class="card-name">CMHK 渠道落地页</span><span class="card-version">v6</span></div>
+        <div class="card-desc">面向渠道经纪人的转化落地页 · 多版本 A/B 测试 · 含玉石珊瑚和浅色两套配色</div>
+        <div class="card-meta"><span class="meta-tag tag-local">HTML</span></div>
+        <span class="card-link">📂 cmhk_channel_landing_page_v6_1_cmhk_conversion.html</span>
+      </div>
+      <div class="tool-card" data-color="purple" data-roles="alice" data-name="产品全景盘点图">
+        <div class="card-top"><span class="card-name">产品全景盘点图</span><span class="card-version">SVG</span></div>
+        <div class="card-desc">聚客 AI 渠道分销中台 16 模块全景 · 绿/黄/灰三级成熟度标注</div>
+        <div class="card-meta"><span class="meta-tag tag-local">SVG</span></div>
+        <span class="card-link">📂 joincom_ai_platform_inventory.svg</span>
+      </div>
+      <div class="tool-card" data-color="purple" data-roles="alice,mia" data-name="CMHK会议提案文档">
+        <div class="card-top"><span class="card-name">CMHK 会议 / 提案文档</span><span class="card-version">10+ 份</span></div>
+        <div class="card-desc">会议话术提纲 · 二级渠道管理体系试点方案 · 返现易联动设计 · 渠道管理平台方案 · 数据需求</div>
+        <div class="card-meta"><span class="meta-tag tag-local">DOCX</span></div>
+        <span class="card-link">📂 ~/Downloads/ 多份文档</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 五、其他 -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon" style="background:var(--teal-bg);color:var(--teal);">5</div>
+      <div class="section-title">其他工具</div>
+      <div class="section-count">4 tools</div>
+    </div>
+    <div class="cards">
+      <div class="tool-card" data-color="teal" data-roles="alice" data-name="自考复习工具">
+        <div class="card-top"><span class="card-name">自考复习工具</span><span class="card-version">6个HTML + 1个DOCX</span></div>
+        <div class="card-desc">习近平思想 · 近代史纲要 · 马原押题打印版 · 中国历史时间轴 · 高频考点手册</div>
+        <div class="card-meta"><span class="meta-tag tag-local">HTML + DOCX</span></div>
+        <span class="card-link">📂 ~/Downloads/ 及 ~/Desktop/111/考试/</span>
+      </div>
+      <div class="tool-card" data-color="teal" data-roles="alice" data-name="合同法律模板">
+        <div class="card-top"><span class="card-name">合同 / 法律模板</span><span class="card-version">7+ 份</span></div>
+        <div class="card-desc">跨境电商代理协议 · 操盘手册 · 渠道合作协议 · 佛牌进口合规 · 泰国供货指引</div>
+        <div class="card-meta"><span class="meta-tag tag-local">DOCX</span></div>
+        <span class="card-link">📂 ~/Downloads/</span>
+      </div>
+      <div class="tool-card" data-color="teal" data-roles="alice" data-name="芽米项目">
+        <div class="card-top"><span class="card-name">芽米项目</span><span class="card-version">2份报告</span></div>
+        <div class="card-desc">芽米财务分拆分析报告 + 小程序分析报告</div>
+        <div class="card-meta"><span class="meta-tag tag-local">DOCX</span></div>
+        <span class="card-link">📂 ~/Desktop/111/芽米/</span>
+      </div>
+      <div class="tool-card" data-color="teal" data-roles="alice" data-name="香港签证高才通">
+        <div class="card-top"><span class="card-name">香港签证 / 高才通</span><span class="card-version">5份文件</span></div>
+        <div class="card-desc">高才通A类续签说明信 · 在港受雇证明信 · 盖章版/签字版/最终版</div>
+        <div class="card-meta"><span class="meta-tag tag-local">DOCX</span></div>
+        <span class="card-link">📂 ~/Downloads/</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="no-results" id="no-results">没有找到匹配的工具</div>
+</div>
+
+<div class="footer">
+  JOINCOM CHINA LIMITED · 内部导航台 Beta · 仅限内部使用
+</div>
+
+</div>
+
+<script>
+// ===== 密码系统 =====
+const PWD_HASH = 'e7182cf9c2ba2307ac0b4db3ce43c82bef212b90a78f3b03931976af1e91eb4c';
+async function sha256(msg) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
+}
+async function checkPwd() {
+  const val = document.getElementById('pwd-input').value;
+  if (!val) return;
+  const hash = await sha256(val);
+  if (hash === PWD_HASH) {
+    sessionStorage.setItem('jk_auth', '1');
+    unlock();
+  } else {
+    document.getElementById('pwd-error').textContent = '密码错误，请重试';
+    document.getElementById('pwd-input').value = '';
+    document.getElementById('pwd-input').focus();
+  }
+}
+function unlock() {
+  document.getElementById('lock-screen').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+}
+function lock() {
+  sessionStorage.removeItem('jk_auth');
+  document.getElementById('lock-screen').classList.remove('hidden');
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('pwd-input').value = '';
+  document.getElementById('pwd-error').textContent = '';
+}
+document.getElementById('pwd-btn').addEventListener('click', checkPwd);
+document.getElementById('pwd-input').addEventListener('keydown', e => { if(e.key==='Enter') checkPwd(); });
+document.getElementById('logout-btn').addEventListener('click', lock);
+if (sessionStorage.getItem('jk_auth') === '1') unlock();
+
+// ===== 日期 =====
+document.getElementById('date').textContent = new Date().toLocaleDateString('zh-CN', { year:'numeric', month:'2-digit', day:'2-digit', weekday:'short' });
+
+// ===== 角色筛选 =====
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', function() {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+    this.classList.add('active');
+    applyFilters();
+  });
+});
+
+// ===== 搜索 =====
+document.getElementById('search-input').addEventListener('input', applyFilters);
+
+function applyFilters() {
+  const role = document.querySelector('.chip.active')?.dataset.role || 'all';
+  const query = document.getElementById('search-input').value.toLowerCase().trim();
+  let totalVisible = 0;
+
+  document.querySelectorAll('.tool-card').forEach(card => {
+    const roles = card.dataset.roles || '';
+    const name = (card.dataset.name || '').toLowerCase();
+    const desc = (card.querySelector('.card-desc')?.textContent || '').toLowerCase();
+    const roleMatch = role === 'all' || roles.includes(role);
+    const searchMatch = !query || name.includes(query) || desc.includes(query);
+    const show = roleMatch && searchMatch;
+    card.style.display = show ? '' : 'none';
+    if (show) totalVisible++;
+  });
+
+  document.querySelectorAll('.section').forEach(sec => {
+    const vis = sec.querySelectorAll('.tool-card:not([style*="display: none"])').length;
+    sec.style.display = vis > 0 ? '' : 'none';
+  });
+
+  document.getElementById('no-results').style.display = totalVisible === 0 ? 'block' : 'none';
+}
+</script>
+</body>
+</html>
